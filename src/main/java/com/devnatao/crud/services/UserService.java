@@ -2,11 +2,16 @@ package com.devnatao.crud.services;
 
 import com.devnatao.crud.entities.UserEntity;
 import com.devnatao.crud.handlers.exceptions.NotFoundException;
+import com.devnatao.crud.mapper.DozerMapper;
 import com.devnatao.crud.repositories.UserRepository;
+import com.devnatao.crud.shared.UserDTO;
+import com.devnatao.crud.shared.model.UserRequest;
+import com.devnatao.crud.shared.model.UserResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -14,8 +19,14 @@ public class UserService {
     @Autowired
     private UserRepository repository;
 
-    public UserEntity create(UserEntity user) {
-        return repository.save(user);
+    public UserDTO create(UserDTO user) {
+        user.setId(null);
+
+        UserEntity entity = DozerMapper.parseObject(user, UserEntity.class);
+        repository.save(entity);
+
+        user.setId(entity.getId());
+        return user;
     }
 
     public void delete(Long id) {
@@ -24,23 +35,25 @@ public class UserService {
         repository.delete(user);
     }
 
-    public UserEntity update(UserEntity user) {
-        UserEntity userResponse = repository.findById(user.getId())
-                                            .orElseThrow(() -> new NotFoundException("Not found"));
+    public UserDTO update(UserDTO user, Long id) {
+        user.setId(id);
 
-        userResponse.setFirstName(user.getFirstName());
-        userResponse.setLastName(user.getLastName());
-        userResponse.setGender(user.getGender());
-        return repository.save(userResponse);
+        UserEntity entity = DozerMapper.parseObject(user, UserEntity.class);
+        repository.save(entity);
+
+        return DozerMapper.parseObject(entity, UserDTO.class);
     }
 
 
-    public UserEntity findById(Long id) {
-        return repository.findById(id)
-                         .orElseThrow(() -> new NotFoundException("Not found"));
+    public UserDTO findById(Long id) {
+        Optional<UserEntity> entity = repository.findById(id);
+
+        return DozerMapper.parseObject(entity.get(), UserDTO.class);
     }
 
-    public List<UserEntity> findAll() {
-        return repository.findAll();
+    public List<UserDTO> findAll() {
+        List<UserEntity> entityList = repository.findAll();
+
+        return DozerMapper.parseListObjects(entityList, UserDTO.class);
     }
 }
